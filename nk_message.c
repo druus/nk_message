@@ -34,7 +34,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.3"
+#define MY_VERSION "1.4"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
