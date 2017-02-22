@@ -1,6 +1,6 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.5
+# Version      1.5.1
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
@@ -9,6 +9,10 @@
 #
 # Changelog
 # ===============================================
+#  1.5.1 2017-02-22 Daniel Ruus
+#    - Removed some testcode used to print out the last modification time
+#      for nk_message.c, ie this file. This will mess up the creation of xmlfiles
+#      so removed the code,
 #  1.5  2017-02-22 Daniel Ruus
 #    - Added removal of old files in function purgeMessageFiles()
 #  1.4  2017-02-20 Daniel Ruus
@@ -40,7 +44,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.5"
+#define MY_VERSION "1.5.1"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -128,13 +132,6 @@ int main( int argc, char *argv[] )
 
 
     compile_message( xmldata );
-
-    /**
-     * Get last modified time of the created file
-     */
-    struct stat attr;
-    stat( "nk_message.c", &attr );
-    printf("Modified: %s\n", ctime(&attr.st_mtime));
 
     return 0;
 } // EOF main()
