@@ -325,7 +325,7 @@ int compile_message( struct XMLDATA xmldata )
 void about()
 {
     printf( "%s, version %s\n", PROGRAM_NAME, MY_VERSION );
-    printf( "(c) Copyright 2013-2015 Daniel Ruus, IT-enheten\n" );
+    printf( "(c) Copyright 2013-2017 Daniel Ruus, IT-enheten\n" );
 } // EOF about()
 
 void usage()
