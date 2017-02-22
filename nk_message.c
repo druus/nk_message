@@ -1,14 +1,17 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.3
+# Version      1.4
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2015-10-16
+# Modified     2017-02-20
 #
 # Changelog
 # ===============================================
+#  1.4  2017-02-20 Daniel Ruus
+#    - Implemented a purge function to delete message files older than
+#      a specified number of days
 #  1.3  2015-10-16 Daniel Ruus
 #    - Include a command line argument which spits out a timestamp
 #  1.2  2015-08-26 Daniel Ruus
@@ -25,7 +28,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-
+#include <sys/stat.h>	// For stat()
+#include <dirent.h>		// For readdir()
 #ifdef WIN32
   #include <Windows.h>
   #include <tchar.h>
@@ -48,6 +52,7 @@ struct XMLDATA {
 };
 
 int compile_message( struct XMLDATA xmldata );
+int purgeMessageFiles( int age, char* path );
 void usage();
 void about();
 
@@ -57,7 +62,10 @@ int main( int argc, char *argv[] )
     struct XMLDATA  xmldata;
     struct hostent *he;
 
-    int count, flags, opt;
+    int count, flags, opt, fileAge = 1;
+    int isPurge = 0;
+	
+	char filePath[255] = ".";	// Path for message files, defaults to current dir
 
     /* Have any arguments been passed? */
     if ( argc < 2 ) {
@@ -67,7 +75,7 @@ int main( int argc, char *argv[] )
 
     strcpy( xmldata.app, PROGRAM_NAME );
 
-    while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vD") ) != -1 ) {
+    while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:D") ) != -1 ) {
         switch (opt) {
             case 'h':
                 usage();
@@ -91,6 +99,15 @@ int main( int argc, char *argv[] )
             case 'u':
                 strncpy( xmldata.user, optarg, 63 );
                 break;
+            case 'A':
+	            fileAge = atoi( optarg );
+		        break;
+            case 'P':
+	            isPurge = 1;
+		        break;
+			case 'p':
+			    strncpy( filePath, optarg, 254);
+				break;
             case 'D':
                 print_timestamp();
                 exit(EXIT_SUCCESS);
@@ -98,11 +115,24 @@ int main( int argc, char *argv[] )
             default: /* '?' */
                 usage();
                 exit(EXIT_FAILURE);
+        }
     }
-  }
+
+    // Did the user ask us to purge old files?
+    if ( isPurge == 1 ) {
+        purgeMessageFiles( fileAge, filePath );
+        exit(EXIT_SUCCESS);
+    }
 
 
     compile_message( xmldata );
+
+    /**
+     * Get last modified time of the created file
+     */
+    struct stat attr;
+    stat( "nk_message.c", &attr );
+    printf("Modified: %s\n", ctime(&attr.st_mtime));
 
     return 0;
 } // EOF main()
@@ -125,6 +155,60 @@ int print_timestamp( void )
     printf("%s\n", time_str);
 
 } // EOF print_timestamp()
+
+
+/**
+ * Purge message files older than fileAge days
+ */
+int purgeMessageFiles( int fileAge, char* path )
+{
+	DIR *dir;
+	struct dirent *ep;
+	struct stat   file_stats;
+	time_t sec;
+    unsigned int fileModTime;
+	unsigned int currentTime;
+	
+	
+    printf("Purging files older than %d days\n", fileAge);
+	printf("Directory to search for old files in: '%s'\n", path);
+	
+	// Open directory for reading
+	dir = opendir( path );
+	if ( dir != NULL ) {
+		printf("Directory %s opened\n", path);
+		
+		// Get the current time
+		sec = time(NULL);
+		currentTime = sec;
+		
+		// Loop through the directory and look at 'regular' entries, i.e. files
+		while ( ep = readdir(dir) ) {
+			if ( ep->d_type == DT_REG && strncmp( ep->d_name, "message-", 8) == 0 ) {
+				printf("Filename: %s    --  ", ep->d_name);
+				
+				// Get the stats for the current file
+				if ((stat(ep->d_name, &file_stats)) == -1 ) {
+					perror("fstat");
+					return 1;
+				}
+				
+				fileModTime = file_stats.st_mtime;
+				if ( currentTime - fileModTime > (fileAge * 86400) ) {
+					printf("Old file\n");
+				} else {
+					printf("NEWish file\n");
+				}
+			}
+		}
+		(void) closedir(dir);
+	} else {
+		perror("Couldn't open the directory");
+	}
+	
+	return 0;
+
+} // EOF purgeMessageFiles()
 
 
 int compile_message( struct XMLDATA xmldata )
@@ -252,6 +336,9 @@ void usage()
     printf( "   -a      Application name\n" );
     printf( "   -c      Client host name (used to override the default host name)\n" );
     printf( "   -u      Name of user creating the message\n" );
+    printf( "   -P      Purge old message files (default: 1 day, override with -A <days>\n" );
+    printf( "   -p      Path for checking for old message files (default: current directory\n" );
+    printf( "   -A      Files older than age (in days) will be deleted with -P (purge)\n" );
     printf( "   -D      Print out a timestamp in the format YYYYMMDDHHMMSS\n" );
     printf( "   -v      Verbose\n" );
 
