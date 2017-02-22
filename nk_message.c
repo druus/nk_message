@@ -1,14 +1,16 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.4
+# Version      1.5
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-02-20
+# Modified     2017-02-22
 #
 # Changelog
 # ===============================================
+#  1.5  2017-02-22 Daniel Ruus
+#    - <TODO>
 #  1.4  2017-02-20 Daniel Ruus
 #    - Implemented a purge function to delete message files older than
 #      a specified number of days
@@ -38,7 +40,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.4"
+#define MY_VERSION "1.5"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
