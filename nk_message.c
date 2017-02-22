@@ -168,7 +168,7 @@ int purgeMessageFiles( int fileAge, char* path )
 	time_t sec;
     unsigned int fileModTime;
 	unsigned int currentTime;
-	
+	char filePath[512];
 	
     printf("Purging files older than %d days\n", fileAge);
 	printf("Directory to search for old files in: '%s'\n", path);
@@ -184,11 +184,16 @@ int purgeMessageFiles( int fileAge, char* path )
 		
 		// Loop through the directory and look at 'regular' entries, i.e. files
 		while ( ep = readdir(dir) ) {
-			if ( ep->d_type == DT_REG && strncmp( ep->d_name, "message-", 8) == 0 ) {
-				printf("Filename: %s    --  ", ep->d_name);
-				
+			if ( ep->d_type == DT_REG && strncmp( ep->d_name, "message-", 8) == 0 ) {				
 				// Get the stats for the current file
-				if ((stat(ep->d_name, &file_stats)) == -1 ) {
+#ifdef WIN32
+				sprintf(filePath, "%s\\%s", path, ep->d_name);
+#else
+				sprintf(filePath, "%s/%s", path, ep->d_name);
+#endif
+				printf("Filename: %s    --  ", filePath);
+				
+				if ((stat(filePath, &file_stats)) == -1 ) {
 					perror("fstat");
 					return 1;
 				}
