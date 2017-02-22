@@ -10,7 +10,7 @@
 # Changelog
 # ===============================================
 #  1.5  2017-02-22 Daniel Ruus
-#    - <TODO>
+#    - Added removal of old files in function purgeMessageFiles()
 #  1.4  2017-02-20 Daniel Ruus
 #    - Implemented a purge function to delete message files older than
 #      a specified number of days
@@ -202,7 +202,14 @@ int purgeMessageFiles( int fileAge, char* path )
 				
 				fileModTime = file_stats.st_mtime;
 				if ( currentTime - fileModTime > (fileAge * 86400) ) {
-					printf("Old file\n");
+					printf("Old file   ");
+					// We have determined that the file is too old, so get rid of itoa
+					if ( remove ( filePath ) == 0 ) {
+						printf("[File removed]\n");
+					} else {
+						perror("remove");
+					}
+					
 				} else {
 					printf("NEWish file\n");
 				}
