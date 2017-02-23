@@ -1,14 +1,16 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.5.1
+# Version      1.6
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-02-22
+# Modified     2017-02-23
 #
 # Changelog
 # ===============================================
+#  1.6  2017-02-23 Daniel Ruus
+#    - TBD
 #  1.5.1 2017-02-22 Daniel Ruus
 #    - Removed some testcode used to print out the last modification time
 #      for nk_message.c, ie this file. This will mess up the creation of xmlfiles
@@ -44,7 +46,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.5.1"
+#define MY_VERSION "1.6"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
