@@ -59,6 +59,7 @@ struct XMLDATA {
     char app[100];              /* Name of the application/script creating the message  */
 };
 
+int print_timestamp();
 char* compile_message( struct XMLDATA xmldata );
 int purgeMessageFiles( int age, char* path );
 void usage();
@@ -176,6 +177,8 @@ int print_timestamp( void )
 
     printf("%s\n", time_str);
 
+	return 0;
+	
 } // EOF print_timestamp()
 
 
