@@ -71,7 +71,7 @@ int main( int argc, char *argv[] )
     struct XMLDATA  xmldata;
     struct hostent *he;
 
-    int count, flags, opt, fileAge = 1;
+    int opt, fileAge = 1;
     int isPurge = 0;			// Flag to indicate whether old files should be removed
 	int isOutput = 0;			// Flag to indicate that the resulting output is written to a file
 	
