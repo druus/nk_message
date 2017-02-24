@@ -69,7 +69,6 @@ int main( int argc, char *argv[] )
 {
 
     struct XMLDATA  xmldata;
-    struct hostent *he;
 
     int opt, fileAge = 1;
     int isPurge = 0;			// Flag to indicate whether old files should be removed
@@ -208,7 +207,7 @@ int purgeMessageFiles( int fileAge, char* path )
 		currentTime = sec;
 		
 		// Loop through the directory and look at 'regular' entries, i.e. files
-		while ( ep = readdir(dir) ) {
+		while ( (ep = readdir(dir)) != NULL ) {
 			if ( ep->d_type == DT_REG && strncmp( ep->d_name, "message-", 8) == 0 ) {				
 				// Get the stats for the current file
 #ifdef WIN32
