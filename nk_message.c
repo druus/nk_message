@@ -1,14 +1,16 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.5.1
+# Version      1.6
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-02-22
+# Modified     2017-02-23
 #
 # Changelog
 # ===============================================
+#  1.6  2017-02-23 Daniel Ruus
+#    - TBD
 #  1.5.1 2017-02-22 Daniel Ruus
 #    - Removed some testcode used to print out the last modification time
 #      for nk_message.c, ie this file. This will mess up the creation of xmlfiles
@@ -44,7 +46,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.5.1"
+#define MY_VERSION "1.6"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -57,7 +59,8 @@ struct XMLDATA {
     char app[100];              /* Name of the application/script creating the message  */
 };
 
-int compile_message( struct XMLDATA xmldata );
+int print_timestamp();
+char* compile_message( struct XMLDATA xmldata );
 int purgeMessageFiles( int age, char* path );
 void usage();
 void about();
@@ -66,13 +69,14 @@ int main( int argc, char *argv[] )
 {
 
     struct XMLDATA  xmldata;
-    struct hostent *he;
 
-    int count, flags, opt, fileAge = 1;
-    int isPurge = 0;
+    int opt, fileAge = 1;
+    int isPurge = 0;			// Flag to indicate whether old files should be removed
+	int isOutput = 0;			// Flag to indicate that the resulting output is written to a file
 	
 	char filePath[255] = ".";	// Path for message files, defaults to current dir
-
+	char outputFile[255];		// File to write to if requested through the argument -o
+	
     /* Have any arguments been passed? */
     if ( argc < 2 ) {
         usage();
@@ -81,7 +85,7 @@ int main( int argc, char *argv[] )
 
     strcpy( xmldata.app, PROGRAM_NAME );
 
-    while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:D") ) != -1 ) {
+    while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:o:D") ) != -1 ) {
         switch (opt) {
             case 'h':
                 usage();
@@ -112,7 +116,11 @@ int main( int argc, char *argv[] )
 	            isPurge = 1;
 		        break;
 			case 'p':
-			    strncpy( filePath, optarg, 254);
+			    strncpy( filePath, optarg, 254 );
+				break;
+			case 'o':
+			    strncpy( outputFile, optarg, 254 );
+				isOutput = 1;
 				break;
             case 'D':
                 print_timestamp();
@@ -131,7 +139,22 @@ int main( int argc, char *argv[] )
     }
 
 
-    compile_message( xmldata );
+	// Either print out the xml or write to a file
+	if ( isOutput == 0 ) {
+		printf("%s\n", compile_message( xmldata ));
+	} else {
+		FILE *fp;
+		
+		fp = fopen( outputFile, "w+");
+		if ( fp == NULL ) {
+			perror("fopen");
+			exit(1);
+		}
+		
+		fprintf( fp, compile_message( xmldata ) ) ;
+		
+		fclose(fp);
+	}
 
     return 0;
 } // EOF main()
@@ -153,6 +176,8 @@ int print_timestamp( void )
 
     printf("%s\n", time_str);
 
+	return 0;
+	
 } // EOF print_timestamp()
 
 
@@ -182,7 +207,7 @@ int purgeMessageFiles( int fileAge, char* path )
 		currentTime = sec;
 		
 		// Loop through the directory and look at 'regular' entries, i.e. files
-		while ( ep = readdir(dir) ) {
+		while ( (ep = readdir(dir)) != NULL ) {
 			if ( ep->d_type == DT_REG && strncmp( ep->d_name, "message-", 8) == 0 ) {				
 				// Get the stats for the current file
 #ifdef WIN32
@@ -222,9 +247,10 @@ int purgeMessageFiles( int fileAge, char* path )
 } // EOF purgeMessageFiles()
 
 
-int compile_message( struct XMLDATA xmldata )
+char* compile_message( struct XMLDATA xmldata )
 {
     char xmltext[4096];
+	char *returnString = malloc( sizeof(char) * 4096 );
 
     time_t t = time(0);
     struct tm* lt = localtime(&t);
@@ -323,7 +349,9 @@ int compile_message( struct XMLDATA xmldata )
         "</messages>",
         xmldata.host, xmldata.user, xmldata.timestamp, xmldata.subject, xmldata.status, xmldata.text, xmldata.app );
 
-    printf("%s\n", xmltext);
+    //printf("%s\n", xmltext);
+	sprintf(returnString, "%s", xmltext);
+	return returnString;
 
 } // EOF compile_message()
 
@@ -341,17 +369,18 @@ void usage()
     printf( "Usage: nk_message options\n\n" );
     printf( "OPTIONS:\n" );
     printf( "   -h      Show this message\n" );
-    printf( "   -l      Status level (info|information|warn|warning|crit|critical|test|success|successful)\n" );
-    printf( "   -s      Subject of message\n" );
-    printf( "   -m      Message text\n" );
-    printf( "   -a      Application name\n" );
-    printf( "   -c      Client host name (used to override the default host name)\n" );
-    printf( "   -u      Name of user creating the message\n" );
-    printf( "   -P      Purge old message files (default: 1 day, override with -A <days>\n" );
-    printf( "   -p      Path for checking for old message files (default: current directory\n" );
-    printf( "   -A      Files older than age (in days) will be deleted with -P (purge)\n" );
-    printf( "   -D      Print out a timestamp in the format YYYYMMDDHHMMSS\n" );
-    printf( "   -v      Verbose\n" );
+    printf( "   -l <level>  Status level (info|information|warn|warning|crit|critical|test|success|successful)\n" );
+    printf( "   -s <subj>   Subject of message\n" );
+    printf( "   -m <msg>    Message text\n" );
+    printf( "   -a <app>    Application name\n" );
+    printf( "   -c <client> Client host name (used to override the default host name)\n" );
+    printf( "   -u <user>   Name of user creating the message\n" );
+    printf( "   -P          Purge old message files (default: 1 day, override with -A <days>\n" );
+    printf( "   -p <path>   Path for checking for old message files (default: current directory\n" );
+	printf( "   -o <file>   Output file. If omitted output to stdout\n" );
+    printf( "   -A <age>    Files older than age (in days) will be deleted with -P (purge)\n" );
+    printf( "   -D          Print out a timestamp in the format YYYYMMDDHHMMSS\n" );
+    printf( "   -v          Verbose\n" );
 
     printf( "\nSTATUS LEVEL:\n" );
     printf( "The status level can be as follows:\n" );
