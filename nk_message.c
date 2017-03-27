@@ -1,6 +1,6 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.7
+# Version      1.7.1
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
@@ -9,6 +9,8 @@
 #
 # Changelog
 # ===============================================
+#  1.7.1 2017-03-27 Daniel Ruus
+#    - Tidy up the code base
 #  1.7  2017-03-27 Daniel Ruus
 #    - Modified compile_message() to return pointer to buffer instead of abort
 #      string. Also fixed a memory leak found when running valgrind.
@@ -49,7 +51,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.6"
+#define MY_VERSION "1.7.1"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
