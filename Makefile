@@ -16,7 +16,7 @@ endif
 
 
 all:
-	gcc -Wall nk_message.c -o $(EXE)
+	gcc -Wall -g nk_message.c -o $(EXE)
 
 clean:
 	$(RM) $(EXE)

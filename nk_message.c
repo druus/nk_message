@@ -1,14 +1,17 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.6
+# Version      1.7
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-02-23
+# Modified     2017-03-27
 #
 # Changelog
 # ===============================================
+#  1.7  2017-03-27 Daniel Ruus
+#    - Modified compile_message() to return pointer to buffer instead of abort
+#      string. Also fixed a memory leak found when running valgrind.
 #  1.6  2017-02-23 Daniel Ruus
 #    - TBD
 #  1.5.1 2017-02-22 Daniel Ruus
@@ -60,7 +63,8 @@ struct XMLDATA {
 };
 
 int print_timestamp();
-char* compile_message( struct XMLDATA xmldata );
+//char* compile_message( struct XMLDATA xmldata );
+int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize );
 int purgeMessageFiles( int age, char* path );
 void usage();
 void about();
@@ -76,6 +80,7 @@ int main( int argc, char *argv[] )
 	
 	char filePath[255] = ".";	// Path for message files, defaults to current dir
 	char outputFile[255];		// File to write to if requested through the argument -o
+	char xmlBuf[4096] = {'\0'};
 	
     /* Have any arguments been passed? */
     if ( argc < 2 ) {
@@ -83,7 +88,14 @@ int main( int argc, char *argv[] )
         exit( EXIT_FAILURE );
     }
 
-    strcpy( xmldata.app, PROGRAM_NAME );
+	// Initialize the structure
+	strcpy( xmldata.host, 		"" );
+	strcpy( xmldata.user, 		"" );
+	strcpy( xmldata.timestamp, 	"" );
+	strcpy( xmldata.subject, 	"" );
+	strcpy( xmldata.text, 		"" );
+	strcpy( xmldata.status, 	"" );
+    strcpy( xmldata.app, 		PROGRAM_NAME );
 
     while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:o:D") ) != -1 ) {
         switch (opt) {
@@ -141,7 +153,8 @@ int main( int argc, char *argv[] )
 
 	// Either print out the xml or write to a file
 	if ( isOutput == 0 ) {
-		printf("%s\n", compile_message( xmldata ));
+		compile_message( xmldata, xmlBuf, sizeof(xmldata) );
+		printf("%s\n", xmlBuf);
 	} else {
 		FILE *fp;
 		
@@ -151,7 +164,9 @@ int main( int argc, char *argv[] )
 			exit(1);
 		}
 		
-		fprintf( fp, compile_message( xmldata ) ) ;
+		//fprintf( fp, compile_message( xmldata ) ) ;
+		compile_message( xmldata, xmlBuf, sizeof(xmldata) );
+		fprintf( fp, xmlBuf ) ;
 		
 		fclose(fp);
 	}
@@ -247,7 +262,8 @@ int purgeMessageFiles( int fileAge, char* path )
 } // EOF purgeMessageFiles()
 
 
-char* compile_message( struct XMLDATA xmldata )
+//char* compile_message( struct XMLDATA xmldata )
+int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 {
     char xmltext[4096];
 	char *returnString = malloc( sizeof(char) * 4096 );
@@ -351,7 +367,10 @@ char* compile_message( struct XMLDATA xmldata )
 
     //printf("%s\n", xmltext);
 	sprintf(returnString, "%s", xmltext);
-	return returnString;
+	strncpy( buffer, returnString, bufSize );
+	free(returnString);
+	//return returnString;
+	return 0;
 
 } // EOF compile_message()
 
