@@ -168,7 +168,7 @@ int main( int argc, char *argv[] )
 		
 		//fprintf( fp, compile_message( xmldata ) ) ;
 		compile_message( xmldata, xmlBuf, sizeof(xmldata) );
-		fprintf( fp, xmlBuf ) ;
+		fprintf( fp, "%s\n", xmlBuf ) ;
 		
 		fclose(fp);
 	}
