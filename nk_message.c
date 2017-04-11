@@ -1,14 +1,16 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.7.1
+# Version      1.7.2
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-03-27
+# Modified     2017-04-11
 #
 # Changelog
 # ===============================================
+#  1.7.2 2017-04-11 Daniel Ruus
+#    - Further code cleanup, also replacing most calls to strncpy() with snprintf()
 #  1.7.1 2017-03-27 Daniel Ruus
 #    - Tidy up the code base
 #  1.7  2017-03-27 Daniel Ruus
@@ -51,7 +53,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.7.1"
+#define MY_VERSION "1.7.2"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -65,7 +67,6 @@ struct XMLDATA {
 };
 
 int print_timestamp();
-//char* compile_message( struct XMLDATA xmldata );
 int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize );
 int purgeMessageFiles( int age, char* path );
 void usage();
@@ -107,27 +108,21 @@ int main( int argc, char *argv[] )
 			exit(EXIT_SUCCESS);
 			break;
 		    case 'l':
-			//strncpy( xmldata.status, optarg, 31 );
 			snprintf( xmldata.status, sizeof(xmldata.status), "%s", optarg );
 			break;
 		    case 's':
-			//strncpy( xmldata.subject, optarg, 99 );
 			snprintf( xmldata.subject, sizeof(xmldata.subject), "%s", optarg );
 			break;
 		    case 'm':
-			//strncpy( xmldata.text, optarg, 8191 );
 			snprintf( xmldata.text, sizeof(xmldata.text), "%s", optarg );
 			break;
 		    case 'a':
-			//strncpy( xmldata.app, optarg, 99 );
 			snprintf( xmldata.app, sizeof(xmldata.app), "%s", optarg );
 			break;
 		    case 'c':
-			//strncpy( xmldata.host, optarg, 1023 );
 			snprintf( xmldata.host, sizeof(xmldata.host), "%s", optarg );
 			break;
 		    case 'u':
-			//strncpy( xmldata.user, optarg, 63 );
 			snprintf( xmldata.user, sizeof(xmldata.user), "%s", optarg );
 			break;
 		    case 'A':
@@ -137,11 +132,9 @@ int main( int argc, char *argv[] )
 			    isPurge = 1;
 				break;
 				case 'p':
-				    //strncpy( filePath, optarg, 254 );
 					snprintf( filePath, sizeof(filePath), "%s", optarg );
 					break;
 				case 'o':
-				    //strncpy( outputFile, optarg, 254 );
 					snprintf( outputFile, sizeof(outputFile), "%s", optarg );
 					isOutput = 1;
 					break;
@@ -175,7 +168,6 @@ int main( int argc, char *argv[] )
 			exit(1);
 		}
 		
-		//fprintf( fp, compile_message( xmldata ) ) ;
 		compile_message( xmldata, xmlBuf, sizeof(xmldata) );
 		fprintf( fp, "%s\n", xmlBuf ) ;
 		
@@ -274,11 +266,10 @@ int purgeMessageFiles( int fileAge, char* path )
 } // EOF purgeMessageFiles()
 
 
-//char* compile_message( struct XMLDATA xmldata )
 int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 {
 	char xmltext[4096];
-	char *returnString = malloc( sizeof(char) * 4096 );
+	//char *returnString = malloc( sizeof(char) * 4096 );
 
 	time_t t = time(0);
 	struct tm* lt = localtime(&t);
@@ -294,12 +285,13 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 #ifdef WIN32
 		// For Windows
 		char userName[1024];
-		//strncpy( userName, getenv("USERNAME"), 1023 );
 		snprintf( userName, sizeof(userName), "%s", getenv("USERNAME") );
 		if ( strlen( userName ) > 1 ) {
-			strcpy( xmldata.user, userName );
+			//strcpy( xmldata.user, userName );
+			snprintf(xmldata.user, sizeof(xmldata.user), "%s", userName);
 		} else {
-			strcpy( xmldata.user, "No Username" );
+			//strcpy( xmldata.user, "No Username" );
+			snprintf(xmldata.user, sizeof(xmldata.user), "%s", "No Username");
 		}
 #else
 		// For Posix
@@ -309,7 +301,6 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		uid = geteuid();
 		pw  = getpwuid( uid );
 		if ( pw ) {
-		    //strcpy( xmldata.user, pw->pw_name );
 			snprintf( xmldata.user, sizeof(xmldata.user), "%s", pw->pw_name );
 		}
 #endif
@@ -335,7 +326,6 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		{
 			strcpy(Name, "Unknown_Host_Name");
 		}
-		//strncpy( xmldata.host, Name, 100 );
 		snprintf( xmldata.host, sizeof(xmldata.host), "%s", Name );
 #else
 		// For Posix
@@ -345,7 +335,6 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 
 
 	/* Set the timestamp */
-	//strcpy( xmldata.timestamp, time_str );
 	snprintf(xmldata.timestamp, sizeof(xmldata.timestamp), "%s", time_str);
 
 	/* We need to convert the status level to a numeric value, as the server expects this. */
@@ -381,12 +370,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		"</messages>",
 		xmldata.host, xmldata.user, xmldata.timestamp, xmldata.subject, xmldata.status, xmldata.text, xmldata.app );
 
-	//printf("%s\n", xmltext);
-	sprintf(returnString, "%s", xmltext);
-	//strncpy( buffer, returnString, bufSize );
-	snprintf(buffer, bufSize, "%s", returnString);
-	free(returnString);
-	//return returnString;
+	snprintf(buffer, bufSize, "%s", xmltext);
+
 	return 0;
 
 } // EOF compile_message()
