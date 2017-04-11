@@ -97,7 +97,8 @@ int main( int argc, char *argv[] )
 	strcpy( xmldata.subject, 	"" );
 	strcpy( xmldata.text, 		"" );
 	strcpy( xmldata.status, 	"" );
-	strcpy( xmldata.app, 		PROGRAM_NAME );
+	//strcpy( xmldata.app, 		PROGRAM_NAME );
+	snprintf( xmldata.app, sizeof(xmldata.app), "%s", PROGRAM_NAME );
 
 	while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:o:D") ) != -1 ) {
 		switch (opt) {
@@ -106,22 +107,28 @@ int main( int argc, char *argv[] )
 			exit(EXIT_SUCCESS);
 			break;
 		    case 'l':
-			strncpy( xmldata.status, optarg, 31 );
+			//strncpy( xmldata.status, optarg, 31 );
+			snprintf( xmldata.status, sizeof(xmldata.status), "%s", optarg );
 			break;
 		    case 's':
-			strncpy( xmldata.subject, optarg, 99 );
+			//strncpy( xmldata.subject, optarg, 99 );
+			snprintf( xmldata.subject, sizeof(xmldata.subject), "%s", optarg );
 			break;
 		    case 'm':
-			strncpy( xmldata.text, optarg, 8191 );
+			//strncpy( xmldata.text, optarg, 8191 );
+			snprintf( xmldata.text, sizeof(xmldata.text), "%s", optarg );
 			break;
 		    case 'a':
-			strncpy( xmldata.app, optarg, 99 );
+			//strncpy( xmldata.app, optarg, 99 );
+			snprintf( xmldata.app, sizeof(xmldata.app), "%s", optarg );
 			break;
 		    case 'c':
-			strncpy( xmldata.host, optarg, 1023 );
+			//strncpy( xmldata.host, optarg, 1023 );
+			snprintf( xmldata.host, sizeof(xmldata.host), "%s", optarg );
 			break;
 		    case 'u':
-			strncpy( xmldata.user, optarg, 63 );
+			//strncpy( xmldata.user, optarg, 63 );
+			snprintf( xmldata.user, sizeof(xmldata.user), "%s", optarg );
 			break;
 		    case 'A':
 			    fileAge = atoi( optarg );
@@ -130,10 +137,12 @@ int main( int argc, char *argv[] )
 			    isPurge = 1;
 				break;
 				case 'p':
-				    strncpy( filePath, optarg, 254 );
+				    //strncpy( filePath, optarg, 254 );
+					snprintf( filePath, sizeof(filePath), "%s", optarg );
 					break;
 				case 'o':
-				    strncpy( outputFile, optarg, 254 );
+				    //strncpy( outputFile, optarg, 254 );
+					snprintf( outputFile, sizeof(outputFile), "%s", optarg );
 					isOutput = 1;
 					break;
 		    case 'D':
@@ -285,7 +294,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 #ifdef WIN32
 		// For Windows
 		char userName[1024];
-		strncpy( userName, getenv("USERNAME"), 1023 );
+		//strncpy( userName, getenv("USERNAME"), 1023 );
+		snprintf( userName, sizeof(userName), "%s", getenv("USERNAME") );
 		if ( strlen( userName ) > 1 ) {
 			strcpy( xmldata.user, userName );
 		} else {
@@ -299,7 +309,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		uid = geteuid();
 		pw  = getpwuid( uid );
 		if ( pw ) {
-		    strcpy( xmldata.user, pw->pw_name );
+		    //strcpy( xmldata.user, pw->pw_name );
+			snprintf( xmldata.user, sizeof(xmldata.user), "%s", pw->pw_name );
 		}
 #endif
 	}
@@ -324,7 +335,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		{
 			strcpy(Name, "Unknown_Host_Name");
 		}
-		strncpy( xmldata.host, Name, 100 );
+		//strncpy( xmldata.host, Name, 100 );
+		snprintf( xmldata.host, sizeof(xmldata.host), "%s", Name );
 #else
 		// For Posix
 		gethostname( xmldata.host, 1024 );
@@ -333,7 +345,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 
 
 	/* Set the timestamp */
-	strcpy( xmldata.timestamp, time_str );
+	//strcpy( xmldata.timestamp, time_str );
+	snprintf(xmldata.timestamp, sizeof(xmldata.timestamp), "%s", time_str);
 
 	/* We need to convert the status level to a numeric value, as the server expects this. */
 	/* Use status level 'info' (value 0) as the default                                    */
@@ -370,7 +383,8 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 
 	//printf("%s\n", xmltext);
 	sprintf(returnString, "%s", xmltext);
-	strncpy( buffer, returnString, bufSize );
+	//strncpy( buffer, returnString, bufSize );
+	snprintf(buffer, bufSize, "%s", returnString);
 	free(returnString);
 	//return returnString;
 	return 0;
@@ -391,7 +405,7 @@ void usage()
 
 	printf( "Usage: nk_message options\n\n" );
 	printf( "OPTIONS:\n" );
-	printf( "   -h      Show this message\n" );
+	printf( "   -h          Show this message\n" );
 	printf( "   -l <level>  Status level (info|information|warn|warning|crit|critical|test|success|successful)\n" );
 	printf( "   -s <subj>   Subject of message\n" );
 	printf( "   -m <msg>    Message text\n" );
@@ -399,7 +413,7 @@ void usage()
 	printf( "   -c <client> Client host name (used to override the default host name)\n" );
 	printf( "   -u <user>   Name of user creating the message\n" );
 	printf( "   -P          Purge old message files (default: 1 day, override with -A <days>\n" );
-	printf( "   -p <path>   Path for checking for old message files (default: current directory\n" );
+	printf( "   -p <path>   Path for checking for old message files (default: current directory)\n" );
 	printf( "   -o <file>   Output file. If omitted output to stdout\n" );
 	printf( "   -A <age>    Files older than age (in days) will be deleted with -P (purge)\n" );
 	printf( "   -D          Print out a timestamp in the format YYYYMMDDHHMMSS\n" );
