@@ -56,7 +56,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.7.2"
+#define MY_VERSION "1.8.0"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -70,7 +70,6 @@ struct XMLDATA {
 };
 
 int print_timestamp(char *timestamp, int bufSize);
-int build_filename(char *filename, int bufSize, char *hostname);
 int get_hostname(char *hostname, int bufSize);
 int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize );
 int purgeMessageFiles( int age, char* path );
@@ -170,9 +169,16 @@ int main( int argc, char *argv[] )
 
 	// If the user has elected to let us build the filename, now is the time
 	if ( isOutput == 1 && isBuildFilename == 1 ) {
-		build_filename(outputFile, sizeof(outputFile), xmldata.host);
+		
+		if ( strlen( xmldata.host ) < 2 ) {
+			char hostname[1024];
+			get_hostname(hostname, sizeof(hostname));
+			snprintf(xmldata.host, sizeof(xmldata.host), "%s", hostname);
+		}
+	
 		print_timestamp(timestamp, sizeof(timestamp));
-		printf("message-%s-%s.xml\n", xmldata.host, timestamp);
+		//printf("message-%s-%s.xml\n", xmldata.host, timestamp);
+		snprintf(outputFile, sizeof(outputFile), "message-%s-%s.xml", xmldata.host, timestamp);
 	}
 
 	// Either print out the xml or write to a file
@@ -219,20 +225,6 @@ int print_timestamp(char *timestamp, int bufSize)
 	return 0;
 	
 } // EOF print_timestamp()
-
-
-/**
- * Build a filename for the resulting XML-file
- */
-int build_filename(char *filename, int bufSize, char *hostname)
-{
-	char timestamp[32];
-	char buffer[255];
-
-	print_timestamp(timestamp, sizeof(timestamp));
-	return 0;
-
-} // EOF build_filename()
 
 
 /**
