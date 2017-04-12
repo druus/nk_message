@@ -1,14 +1,17 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.7.2
+# Version      1.8.0
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-04-11
+# Modified     2017-04-12
 #
 # Changelog
 # ===============================================
+#  1.8.0 2017-04-12 Daniel Ruus
+#    - Automatically create a filename for output file with new argument -O.
+#      The format of the filename is message-<hostname->-<timestamp>.xml.
 #  1.7.2 2017-04-11 Daniel Ruus
 #    - Further code cleanup, also replacing most calls to strncpy() with snprintf()
 #  1.7.1 2017-03-27 Daniel Ruus
@@ -53,7 +56,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.7.2"
+#define MY_VERSION "1.8.0"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -66,7 +69,8 @@ struct XMLDATA {
     char app[100];              /* Name of the application/script creating the message  */
 };
 
-int print_timestamp();
+int print_timestamp(char *timestamp, int bufSize);
+int get_hostname(char *hostname, int bufSize);
 int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize );
 int purgeMessageFiles( int age, char* path );
 void usage();
@@ -80,10 +84,12 @@ int main( int argc, char *argv[] )
 	int opt, fileAge = 1;
 	int isPurge = 0;		// Flag to indicate whether old files should be removed
 	int isOutput = 0;		// Flag to indicate that the resulting output is written to a file
+	int isBuildFilename = 0;	// Flag to indicate if we are to build our own filename
 
 	char filePath[255] = ".";	// Path for message files, defaults to current dir
 	char outputFile[255];		// File to write to if requested through the argument -o
 	char xmlBuf[4096] = {'\0'};
+	char timestamp[32] = {'\0'};	// Holding the timestamp if it's been requested
 	
 	/* Have any arguments been passed? */
 	if ( argc < 2 ) {
@@ -98,10 +104,9 @@ int main( int argc, char *argv[] )
 	strcpy( xmldata.subject, 	"" );
 	strcpy( xmldata.text, 		"" );
 	strcpy( xmldata.status, 	"" );
-	//strcpy( xmldata.app, 		PROGRAM_NAME );
 	snprintf( xmldata.app, sizeof(xmldata.app), "%s", PROGRAM_NAME );
 
-	while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:o:D") ) != -1 ) {
+	while (( opt = getopt(argc, argv, "hl:s:m:a:c:u:vPA:p:o:OD") ) != -1 ) {
 		switch (opt) {
 		    case 'h':
 			usage();
@@ -126,20 +131,28 @@ int main( int argc, char *argv[] )
 			snprintf( xmldata.user, sizeof(xmldata.user), "%s", optarg );
 			break;
 		    case 'A':
-			    fileAge = atoi( optarg );
-				break;
+			fileAge = atoi( optarg );
+			break;
 		    case 'P':
-			    isPurge = 1;
-				break;
-				case 'p':
-					snprintf( filePath, sizeof(filePath), "%s", optarg );
-					break;
-				case 'o':
-					snprintf( outputFile, sizeof(outputFile), "%s", optarg );
-					isOutput = 1;
-					break;
+			isPurge = 1;
+			break;
+		    case 'p':
+			snprintf( filePath, sizeof(filePath), "%s", optarg );
+			break;
+		    case 'o':
+			snprintf( outputFile, sizeof(outputFile), "%s", optarg );
+			isOutput = 1;
+			break;
+		    case 'O':
+			//snprint( outputFile, sizeof(outputFile), "%s"
+			//build_filename(outputFile, sizeof(outputFile));
+			isOutput = 1;
+			isBuildFilename = 1;
+			break;
 		    case 'D':
-			print_timestamp();
+			//print_timestamp();
+			print_timestamp(timestamp, sizeof(timestamp));
+			printf("%s\n", timestamp);
 			exit(EXIT_SUCCESS);
 			break;
 		    default: /* '?' */
@@ -154,6 +167,19 @@ int main( int argc, char *argv[] )
 		exit(EXIT_SUCCESS);
 	}
 
+	// If the user has elected to let us build the filename, now is the time
+	if ( isOutput == 1 && isBuildFilename == 1 ) {
+		
+		if ( strlen( xmldata.host ) < 2 ) {
+			char hostname[1024];
+			get_hostname(hostname, sizeof(hostname));
+			snprintf(xmldata.host, sizeof(xmldata.host), "%s", hostname);
+		}
+	
+		print_timestamp(timestamp, sizeof(timestamp));
+		//printf("message-%s-%s.xml\n", xmldata.host, timestamp);
+		snprintf(outputFile, sizeof(outputFile), "message-%s-%s.xml", xmldata.host, timestamp);
+	}
 
 	// Either print out the xml or write to a file
 	if ( isOutput == 0 ) {
@@ -182,7 +208,7 @@ int main( int argc, char *argv[] )
 /**
  * Print out a timestamp in the format YYYYMMDDHHMMSS
  */
-int print_timestamp( void )
+int print_timestamp(char *timestamp, int bufSize)
 {
 	time_t t = time(0);
 	struct tm* lt = localtime(&t);
@@ -193,11 +219,46 @@ int print_timestamp( void )
 		lt->tm_hour, lt->tm_min, lt->tm_sec
 		);
 
-	printf("%s\n", time_str);
+	//printf("%s\n", time_str);
+	snprintf(timestamp, bufSize, "%s", time_str);
 
 	return 0;
 	
 } // EOF print_timestamp()
+
+
+/**
+ * Get the hostname for the current machine
+ */
+int get_hostname(char *hostname, int bufSize)
+{
+	char Name[150];
+#ifdef WIN32
+		// For Windows
+		int i=0;
+		TCHAR infoBuf[150];
+		DWORD bufCharCount = 150;
+		memset(Name, 0, 150);
+		if( GetComputerName( infoBuf, &bufCharCount ) )
+		{
+			for(i=0; i<150; i++)
+			{
+				Name[i] = infoBuf[i];
+			}
+		}
+		else
+		{
+			strcpy(Name, "Unknown_Host_Name");
+		}
+		snprintf( hostname, bufSize, "%s", Name );
+#else
+		// For Posix
+		gethostname( Name, 1024 );
+		snprintf(hostname, bufSize, Name);
+#endif
+	return 0;
+	
+} // EOF get_hostname()
 
 
 /**
@@ -309,6 +370,7 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 	/* If no hostname provided, use the running systems name */
 	if ( strlen( xmldata.host ) < 2 ) {
 #ifdef WIN32
+/*
 		// For Windows
 		char Name[150];
 		int i=0;
@@ -327,10 +389,15 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 			strcpy(Name, "Unknown_Host_Name");
 		}
 		snprintf( xmldata.host, sizeof(xmldata.host), "%s", Name );
+		*/
 #else
 		// For Posix
-		gethostname( xmldata.host, 1024 );
+		//gethostname( xmldata.host, 1024 );
+		
 #endif
+		char hostname[1024];
+		get_hostname(hostname, sizeof(hostname));
+		snprintf(xmldata.host, sizeof(xmldata.host), "%s", hostname);
 	}
 
 
