@@ -5,10 +5,13 @@
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2017-04-12
+# Modified     2018-01-11
 #
 # Changelog
 # ===============================================
+#  1.8.1 2018-01-11 Daniel Ruus
+#    - Amended the help text as it didn't explain to the user about the new
+#      argument -O.
 #  1.8.0 2017-04-12 Daniel Ruus
 #    - Automatically create a filename for output file with new argument -O.
 #      The format of the filename is message-<hostname->-<timestamp>.xml.
@@ -56,7 +59,7 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.8.0"
+#define MY_VERSION "1.8.1"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
@@ -464,9 +467,10 @@ void usage()
 	printf( "   -a <app>    Application name\n" );
 	printf( "   -c <client> Client host name (used to override the default host name)\n" );
 	printf( "   -u <user>   Name of user creating the message\n" );
-	printf( "   -P          Purge old message files (default: 1 day, override with -A <days>\n" );
+	printf( "   -P          Purge old message files (default: 1 day, override with -A <days>)\n" );
 	printf( "   -p <path>   Path for checking for old message files (default: current directory)\n" );
-	printf( "   -o <file>   Output file. If omitted output to stdout\n" );
+	printf( "   -o <file>   Output to file <file> instead of to stdout\n" );
+	printf( "   -O          Output to file with filename message-<hostname>-<timestamp>.xml\n" );
 	printf( "   -A <age>    Files older than age (in days) will be deleted with -P (purge)\n" );
 	printf( "   -D          Print out a timestamp in the format YYYYMMDDHHMMSS\n" );
 	printf( "   -v          Verbose\n" );
