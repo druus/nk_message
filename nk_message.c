@@ -1,14 +1,17 @@
 /****************************************************************************
 # File         nk_message.c
-# Version      1.8.0
+# Version      1.8.2
 # Description  Send messages to Messaging Queue
 # Written by   Daniel Ruus
 # Copyright    Daniel Ruus
 # Created      2013-02-26
-# Modified     2018-01-11
+# Modified     2022-09-16
 #
 # Changelog
 # ===============================================
+#  1.8.2 2022-09-16 Daniel Ruus
+#    - Fixed some compilation warnings [caused by -Wformat-security] due to
+#      Ubuntu having changed the default settings for gcc.
 #  1.8.1 2018-01-11 Daniel Ruus
 #    - Amended the help text as it didn't explain to the user about the new
 #      argument -O.
@@ -59,13 +62,13 @@
 #endif
 
 #define PROGRAM_NAME "nk_message"
-#define MY_VERSION "1.8.1"
+#define MY_VERSION "1.8.2"
 
 /* Define a structure for the XML contents */
 struct XMLDATA {
-    char host[1024];            /* Host name                                            */
+    char host[255];             /* Host name                                            */
     char user[64];              /* User name of the sender                              */
-    char timestamp[20];         /* Date and time message is created                     */
+    char timestamp[24];         /* Date and time message is created                     */
     char subject[100];          /* Subject line                                         */
     char text[8192];            /* Message body text                                    */
     char status[32];            /* Status level                                         */
@@ -90,7 +93,7 @@ int main( int argc, char *argv[] )
 	int isBuildFilename = 0;	// Flag to indicate if we are to build our own filename
 
 	char filePath[255] = ".";	// Path for message files, defaults to current dir
-	char outputFile[255];		// File to write to if requested through the argument -o
+	char outputFile[1024];		// File to write to if requested through the argument -o
 	char xmlBuf[4096] = {'\0'};
 	char timestamp[32] = {'\0'};	// Holding the timestamp if it's been requested
 	
@@ -174,7 +177,7 @@ int main( int argc, char *argv[] )
 	if ( isOutput == 1 && isBuildFilename == 1 ) {
 		
 		if ( strlen( xmldata.host ) < 2 ) {
-			char hostname[1024];
+			char hostname[255];
 			get_hostname(hostname, sizeof(hostname));
 			snprintf(xmldata.host, sizeof(xmldata.host), "%s", hostname);
 		}
@@ -235,7 +238,7 @@ int print_timestamp(char *timestamp, int bufSize)
  */
 int get_hostname(char *hostname, int bufSize)
 {
-	char Name[150];
+	char Name[255];
 #ifdef WIN32
 		// For Windows
 		int i=0;
@@ -256,8 +259,8 @@ int get_hostname(char *hostname, int bufSize)
 		snprintf( hostname, bufSize, "%s", Name );
 #else
 		// For Posix
-		gethostname( Name, 1024 );
-		snprintf(hostname, bufSize, Name);
+		gethostname( Name, 255);
+		snprintf(hostname, bufSize, "%s", Name);
 #endif
 	return 0;
 	
@@ -332,7 +335,7 @@ int purgeMessageFiles( int fileAge, char* path )
 
 int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 {
-	char xmltext[4096];
+	char xmltext[16384];
 	//char *returnString = malloc( sizeof(char) * 4096 );
 
 	time_t t = time(0);
@@ -398,7 +401,7 @@ int compile_message( struct XMLDATA xmldata, char *buffer, int bufSize )
 		//gethostname( xmldata.host, 1024 );
 		
 #endif
-		char hostname[1024];
+		char hostname[255];
 		get_hostname(hostname, sizeof(hostname));
 		snprintf(xmldata.host, sizeof(xmldata.host), "%s", hostname);
 	}
